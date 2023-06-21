@@ -1,4 +1,4 @@
-const { User } = require('../models/index.modal')
+const { User } = require('../models/index.model')
 const validator = require("../helpers/validation")
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");

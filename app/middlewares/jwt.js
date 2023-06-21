@@ -1,5 +1,5 @@
 var jwt = require('jsonwebtoken');
-const { User } = require("../models/index.modal");
+const { User } = require("../models/index.model");
 const secret = process.env.SECRET;
 
 exports.generateWebToken = (docId) => {
