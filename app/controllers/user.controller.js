@@ -61,22 +61,17 @@ exports.create = async (req, res) => {
 
 exports.index = async (req, res) => {
     try {
-        if (req.userdata.role == "admin") {
             let page = req.query.page ? parseInt(req.query.page) : 1;
             let limit = req.query.limit ? parseInt(req.query.limit) : 5;
             let skip = page > 1 ? (page - 1) * limit : 0;
 
-            await User.find().skip(skip).limit(limit).then((docs) => {
-                successResponse(200, "user REtrieved.", docs, res)
+             User.find().skip(skip).limit(limit).then((docs) => {
+                successResponse(200, "user Retrieved.", docs, res)
             })
                 .catch((err) => {
                     errorResponse(422, err.message, res)
                 });
         }
-        else {
-            errorResponse(422, err.message, res)
-        }
-    }
     catch (err) {
         errorResponse(422, err.message, res)
     }
@@ -113,18 +108,11 @@ exports.update = async (req, res) => {
 
         const validation = schema.validate(req.body);
         if (validation.error) {
-            return res.status(401).json({
-                message: "Validation failed",
-                error: validation.error.details.map((err) => err.message),
-                status: false
-            });
+            errorResponse(401, error.message, res)
         }
 
         if (req.userdata.role === "admin" || req.userdata.id !== req.params.id) {
-            return res.status(422).json({
-                message: "Not authorized",
-                status: false
-            });
+            errorResponse(422, "Not authorized", res)
         }
 
         const updateObject = {};
@@ -145,13 +133,12 @@ exports.update = async (req, res) => {
         }
 
         if (req.userdata.id === req.params.id) {
-            await User.updateOne({ _id: req.params.id }, { $set: updateObject })
+             User.updateOne({ _id: req.params.id }, { $set: updateObject })
                 .then((docs) => {
                     successResponse(202, "user updated successfully", docs, res)
                 })
                 .catch((err) => {
                     errorResponse(422, err.message, res)
-
                 });
         } else {
             errorResponse(401, "unauthorised user", res)
@@ -166,7 +153,7 @@ exports.destroy = async (req, res) => {
         let authUser = req.userdata;
         docId = req.params.id;
         if (authUser.role == "admin") {
-            await User
+             User
                 .deleteOne({ _id: docId })
                 .then((docs) => {
 
@@ -190,9 +177,9 @@ exports.login = async (req, res) => {
     if (result.status === false) {
         errorResponse(422, err.message, res)
     } else {
-        await User.findOne({ email: req.body.email }).then((docs) => {
+         User.findOne({ email: req.body.email }).then((docs) => {
             if (!docs) {
-                errorResponse(404, err.message, res)
+                errorResponse(404, "not found", res)
             } else {
                 if (bcrypt.compareSync(req.body.password, docs["_doc"].password) === true) {
                     docs["_doc"].auth_token = generateWebToken(docs._id);

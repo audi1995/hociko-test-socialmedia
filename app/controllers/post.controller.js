@@ -5,10 +5,9 @@ const Joi = require("joi");
 
 exports.create = (req, res) => {
     try {
-        let author = req.userdata.id
         new Post({
             ...req.body,
-            author: author
+            author: req.userdata.id
         }).save().then((docs) => {
             successResponse(201, "Post created.", docs, res);
         }).catch((err) => {
@@ -21,7 +20,11 @@ exports.create = (req, res) => {
 
 
 exports.index = (req, res) => {
-    Post.find().then((docs) => {
+    let page = req.query.page ? parseInt(req.query.page) : 1;
+    let limit = req.query.limit ? parseInt(req.query.limit) : 5;
+    let skip = page > 1 ? (page - 1) * limit : 0;
+
+    Post.find().skip(skip).limit(limit).then((docs) => {
         successResponse(200, "posts retrieved successfully", docs, res)
     }).catch((err) => {
         errorResponse(422, err.message, res)
@@ -65,7 +68,7 @@ exports.update = async (req, res) => {
             if (error) {
                 return errorResponse(422, error.message, res);
             }
-            await Post.updateOne({ _id: req.params.id }, req.body)
+             Post.updateOne({ _id: req.params.id }, req.body)
                 .then((docs) => {
                     successResponse(200, "post updated successfully", docs, res)
                 })
