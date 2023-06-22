@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 router(app)
 
-const port = 3000
+const port = process.env.PORT
 
 
 app.listen(port, () => {

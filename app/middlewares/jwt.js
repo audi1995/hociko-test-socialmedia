@@ -1,5 +1,6 @@
 var jwt = require('jsonwebtoken');
 const { User } = require("../models/index.model");
+const { errorResponse } = require('../helpers/response');
 const secret = process.env.SECRET;
 
 exports.generateWebToken = (docId) => {
@@ -10,11 +11,7 @@ exports.generateWebToken = (docId) => {
 
 exports.verifyWebToken = async (req, res, next) => {
     if (!req.headers.authorization) {
-        res.status(401).json({
-            message: "Authentication failed",
-            status: false
-        });
-
+        errorResponse(401, "Authentication failed", res)
     } else {
         let token = req.headers.authorization.split(" ")[1];
         try {

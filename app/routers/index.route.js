@@ -3,5 +3,4 @@ module.exports = function (app) {
     app.use('/posts', require('./post.route'))
     app.use('/comments', require('./comment.route'))
     app.use('/likes', require('./like.route'))
-    app.use('/followers', require('./follower.route'))
 }
