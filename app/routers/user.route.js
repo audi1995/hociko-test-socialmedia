@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const {create, index, show, update, destroy, login, followers} = require('../controllers/user.controller')
+const {create, index, show, update, destroy, login, followers, unfollow } = require('../controllers/user.controller')
 const {verifyWebToken} = require("../middlewares/jwt")
 
 router.post('/',create)
@@ -9,6 +9,6 @@ router.patch('/:id',verifyWebToken, update)
 router.delete('/:id', verifyWebToken, destroy)
 router.post('/login', login)
 router.patch('/followers/:following_id',verifyWebToken ,followers)
-// router.patch('/following/:following_id',verifyWebToken ,following)
+router.patch('/unfollow/:unfollow',verifyWebToken ,unfollow)
 
 module.exports = router;

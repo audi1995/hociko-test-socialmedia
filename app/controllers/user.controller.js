@@ -3,7 +3,7 @@ const validator = require("../helpers/validation")
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
 const Joi = require('joi');
-saltRounds = process.env.SALT_ROUNDS;
+saltRounds = 10;
 const { errorResponse, successResponse } = require('../helpers/response')
 var { generateWebToken } = require("../middlewares/jwt");
 const emailSender = require('../helpers/nodemailer');
@@ -32,18 +32,18 @@ exports.create = async (req, res) => {
                     } else {
                         bcrypt.hash(req.body.password, salt, async function (err, hash) {
                             if (err) {
-                                errorResponse(500, err.message, res);
+                                errorResponse(422, err.message, res);
                             } else {
                                 req.body.password = hash;
                                 let user = await User(req.body).save();
                                 if (!user) {
                                     errorResponse(400, "User not created.", res);
                                 } else {
-                                        await emailSender.sendEmail(
-                                          user.email,
-                                          `Greetings from our company`,
-                                          `Hello, ${user.name} Welcome to our website`
-                                        );
+                                    // await emailSender.sendEmail(
+                                    //     user.email,
+                                    //     `Greetings from our company`,
+                                    //     `Hello, ${user.name} Welcome to our website`
+                                    // );
                                     successResponse(201, "User created successfully.", user, res);
                                 }
                             }
@@ -151,15 +151,11 @@ exports.update = async (req, res) => {
 
 exports.destroy = async (req, res) => {
     try {
-        let authUser = req.userdata;
-        docId = req.params.id;
-        if (authUser.role == "admin") {
+        if (req.userdata.role == "admin") {
             User
-                .deleteOne({ _id: docId })
+                .deleteOne({ _id: req.params.id })
                 .then((docs) => {
-
                     successResponse(200, "user deleted.", {}, res)
-
                 })
                 .catch((err) => {
                     errorResponse(422, err.message, res)
@@ -168,15 +164,16 @@ exports.destroy = async (req, res) => {
             errorResponse(422, err.message, res)
         }
     } catch (err) {
-        errorResponse(500, err.message, res)
+        errorResponse(422, err.message, res)
     }
 };
+
 
 
 exports.login = async (req, res) => {
     let result = validator.email(req.body);
     if (result.status === false) {
-        errorResponse(422, err.message, res)
+        errorResponse(422, "please provide valid email", res)
     } else {
         User.findOne({ email: req.body.email }).then((docs) => {
             if (!docs) {
@@ -196,38 +193,69 @@ exports.login = async (req, res) => {
 
 
 exports.followers = async (req, res) => {
-  const following_id = req.params.following_id;
-  const user_id = req.userdata.id;
+    try {
+        const following_id = req.params.following_id;
+        const user_id = req.userdata.id;
+        const follower = await User.findOne({ _id: user_id });
+        const param_user = await User.findOne({ _id: following_id });
+        let check = follower.following.find((follow) => {
+            let objectId = new mongoose.Types.ObjectId(following_id);
+            return follow.following_id.equals(objectId);
+        });
+        if (check) {
+            return errorResponse(422, "Already following", res);
+        } else {
+            const object = {
+                following_id: following_id,
+                name: param_user.name
+            };
 
-  try {
-    const follower = await User.findOne({ _id: user_id });
-    const param_user = await User.findOne({ _id: following_id });
+            const obj = {
+                follower_id: req.userdata.id,
+                name: follower.name
+            };
 
-    let check = follower.following.find((follow) => {
-      let objectId = new mongoose.Types.ObjectId(following_id);
-      return follow.following_id.equals(objectId);
-    });
-console.log(check);
-    if (check) {
-      return errorResponse(422, "Already following", res);
-    } else {
-      const object = {
-        following_id: following_id,
-        name: param_user.name
-      };
+            let following = await User.updateOne({ _id: req.userdata.id }, { $addToSet: { following: object } });
+            await User.updateOne({ _id: following_id }, { $addToSet: { followers: obj } });
 
-      const obj = {
-        user_id: user_id,
-        name: follower.name
-      };
-
-      let following = await User.updateOne({ _id: user_id }, { $push: { following: object } });
-      await User.updateOne({ _id: following_id }, { $push: { followers: obj } });
-
-      return successResponse(202, "Follower added",following, res);
+            return successResponse(202, "Follower added", following, res);
+        }
+    } catch (error) {
+        errorResponse(422, err.message, res);
     }
-  } catch (error) {
-    console.error(error);
-    return errorResponse(500, "Internal Server Error", res);
-  }
+};
+
+
+
+
+
+exports.unfollow = async (req, res) => {
+    try {
+        const unfollowerId = req.userdata.id;
+        const followingId = req.params.unfollow;
+
+        const unfollower = await User.findOne({ _id: unfollowerId });
+        const unfollowedUser = await User.findOne({ _id: followingId });
+        console.log(unfollower);
+
+        let isFollowing = unfollower.following.find((follow) => {
+            let objectId = new mongoose.Types.ObjectId(req.params.unfollow);
+            return follow.following_id.equals(objectId);
+        });
+        // console.log(isFollowing);
+        if (isFollowing) {
+            const object = {
+                following_id: followingId,
+                name: unfollowedUser.name
+            };
+             console.log("object", object);
+            // await User.updateOne({ _id: unfollowerId }, { $pull: { following: object } });
+
+            successResponse(200, "Successfully unfollowed", res);
+        } else {
+            errorResponse(422, "Not unfollowed", res);
+        }
+    } catch (error) {
+        errorResponse(422, "error.message", res);
+    }
 };
