@@ -14,7 +14,7 @@ exports.create = async (req, res) => {
     try {
         let result = validator.both(req.body);
         if (!result.status) {
-            errorResponse(422, "Invalid email or phone", res);
+            errorResponse(422, result.message, res);
         } else {
             let count = await User.countDocuments({
                 $or: [
@@ -22,7 +22,6 @@ exports.create = async (req, res) => {
                     { phone: req.body.phone }
                 ]
             });
-
             if (count > 0) {
                 errorResponse(401, "User already exists.", res);
             } else {
@@ -63,9 +62,9 @@ exports.create = async (req, res) => {
 exports.index = async (req, res) => {
     try {
         let page = req.query.page ? parseInt(req.query.page) : 1;
-        let limit = req.query.limit ? parseInt(req.query.limit) : 5;
+        let limit = req.query.limit ? parseInt(req.query.limit) : 0;
         let skip = page > 1 ? (page - 1) * limit : 0;
-
+console.log(page, limit, skip);
         User.find().skip(skip).limit(limit).then((docs) => {
             successResponse(200, "user Retrieved.", docs, res)
         })
@@ -112,7 +111,7 @@ exports.update = async (req, res) => {
             errorResponse(401, error.message, res)
         }
 
-        if (req.userdata.role === "admin" || req.userdata.id !== req.params.id) {
+        if (req.userdata.role !== "admin" || req.userdata.id !== req.params.id) {
             errorResponse(422, "Not authorized", res)
         }
 
@@ -169,7 +168,6 @@ exports.destroy = async (req, res) => {
 };
 
 
-
 exports.login = async (req, res) => {
     let result = validator.email(req.body);
     if (result.status === false) {
@@ -209,15 +207,12 @@ exports.followers = async (req, res) => {
                 following_id: following_id,
                 name: param_user.name
             };
-
             const obj = {
                 follower_id: req.userdata.id,
                 name: follower.name
             };
-
             let following = await User.updateOne({ _id: req.userdata.id }, { $addToSet: { following: object } });
             await User.updateOne({ _id: following_id }, { $addToSet: { followers: obj } });
-
             return successResponse(202, "Follower added", following, res);
         }
     } catch (error) {
@@ -248,7 +243,7 @@ exports.unfollow = async (req, res) => {
                 following_id: followingId,
                 name: unfollowedUser.name
             };
-             console.log("object", object);
+            console.log("object", object);
             // await User.updateOne({ _id: unfollowerId }, { $pull: { following: object } });
 
             successResponse(200, "Successfully unfollowed", res);

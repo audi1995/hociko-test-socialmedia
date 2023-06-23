@@ -9,6 +9,6 @@ router.patch('/:id',verifyWebToken, update)
 router.delete('/:id', verifyWebToken, destroy)
 router.post('/login', login)
 router.patch('/followers/:following_id',verifyWebToken ,followers)
-router.patch('/unfollow/:unfollow',verifyWebToken ,unfollow)
+// router.patch('/unfollow/:unfollow',verifyWebToken ,unfollow)
 
 module.exports = router;

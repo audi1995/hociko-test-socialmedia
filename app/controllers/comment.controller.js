@@ -30,8 +30,6 @@ exports.create = async (req, res) => {
 
 exports.index = async (req, res) => {
     try {
-        const post = await Post.findOne({ _id: req.params.post })
-        if (req.userdata.id === post.user) {
             let page = req.query.page ? parseInt(req.query.page) : 1;
             let limit = req.query.limit ? parseInt(req.query.limit) : 5;
             let skip = page > 1 ? (page - 1) * limit : 0;
@@ -39,13 +37,9 @@ exports.index = async (req, res) => {
             const comments = await Comment.find().skip(skip).limit(limit);
             successResponse(200, "Comments retrieved successfully", comments, res)
         }
-        else {
-            errorResponse(422, err.message, res);
-        }
-    } catch (err) {
+    catch (err) {
         errorResponse(422, err.message, res);
-    }
-};
+    }}
 
 
 exports.show = async (req, res) => {
